@@ -1,0 +1,2098 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="数据结构第3章：顺序栈与链栈的初始化、入栈、出栈、取栈顶元素动画演示。">
+  <title>3.3 栈的表示与实现 | 顺序栈与链栈</title>
+  <style>
+    :root {
+      --ink: #14213d;
+      --ink-soft: #49607f;
+      --paper: #f3f6fb;
+      --card: #ffffff;
+      --line: #dce4ef;
+      --line-strong: #b9c8db;
+      --navy: #17324d;
+      --navy-2: #214c69;
+      --blue: #2f6fed;
+      --blue-soft: #e8f0ff;
+      --cyan: #168e9e;
+      --cyan-soft: #e1f6f8;
+      --amber: #f59e0b;
+      --amber-soft: #fff4d6;
+      --green: #16845b;
+      --green-soft: #e5f6ef;
+      --red: #c73e4d;
+      --red-soft: #fdecef;
+      --purple: #7357d8;
+      --shadow: 0 18px 50px rgba(28, 50, 84, 0.10);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 10px;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(47, 111, 237, 0.13), transparent 34rem),
+        radial-gradient(circle at 92% 16%, rgba(22, 142, 158, 0.11), transparent 30rem),
+        linear-gradient(180deg, #f8faff 0%, var(--paper) 52%, #edf2f8 100%);
+      line-height: 1.6;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+
+    .page {
+      width: min(1440px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 30px 0 56px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 34px;
+      min-height: 230px;
+      padding: 42px 46px;
+      color: #fff;
+      border-radius: 30px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.075), transparent 45%),
+        linear-gradient(135deg, #102b45 0%, #173c5d 48%, #145b6e 100%);
+      box-shadow: 0 26px 70px rgba(16, 43, 69, 0.22);
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      width: 360px;
+      height: 360px;
+      right: -130px;
+      top: -180px;
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 0 0 42px rgba(255,255,255,0.035), 0 0 0 90px rgba(255,255,255,0.02);
+    }
+
+    .hero::after {
+      width: 140px;
+      height: 140px;
+      left: 54%;
+      bottom: -105px;
+      background: rgba(61, 211, 203, 0.13);
+      filter: blur(1px);
+    }
+
+    .hero-copy { position: relative; z-index: 1; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 13px;
+      color: #9ee7e8;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      border-radius: 1px;
+      background: currentColor;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.06;
+      letter-spacing: -0.045em;
+    }
+
+    .hero p {
+      max-width: 800px;
+      margin: 18px 0 0;
+      color: rgba(255,255,255,0.76);
+      font-size: clamp(15px, 1.6vw, 18px);
+    }
+
+    .hero-chip {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 150px;
+      height: 150px;
+      flex: none;
+      border: 1px solid rgba(255,255,255,0.20);
+      border-radius: 34px;
+      background: rgba(255,255,255,0.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-chip strong {
+      margin-bottom: -9px;
+      font-size: 46px;
+      line-height: 1;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-chip span {
+      color: rgba(255,255,255,0.72);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .storage-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 22px 0 16px;
+      padding: 7px;
+      border: 1px solid rgba(185, 200, 219, 0.75);
+      border-radius: 20px;
+      background: rgba(255,255,255,0.78);
+      box-shadow: 0 10px 30px rgba(31, 53, 82, 0.06);
+      backdrop-filter: blur(12px);
+    }
+
+    .storage-tab {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 76px;
+      padding: 14px 20px;
+      border: 0;
+      border-radius: 14px;
+      color: var(--ink-soft);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .storage-tab:hover {
+      color: var(--ink);
+      background: rgba(232, 240, 255, 0.7);
+    }
+
+    .storage-tab[aria-selected="true"] {
+      color: #fff;
+      background: linear-gradient(135deg, var(--navy-2), #1d6578);
+      box-shadow: 0 10px 24px rgba(23, 76, 105, 0.20);
+    }
+
+    .storage-tab:disabled {
+      cursor: wait;
+      opacity: 0.72;
+    }
+
+    .tab-name {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .tab-name b {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .storage-tab[aria-selected="true"] .tab-name b {
+      color: #0f3f50;
+      background: #b6f0ef;
+    }
+
+    .tab-help {
+      color: inherit;
+      opacity: 0.72;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .simulator {
+      overflow: hidden;
+      border: 1px solid rgba(201, 213, 228, 0.9);
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fbfcff);
+    }
+
+    .value-control {
+      display: grid;
+      gap: 7px;
+      width: min(280px, 100%);
+    }
+
+    .value-control label {
+      color: var(--ink-soft);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .value-input-wrap { position: relative; }
+
+    .value-input-wrap::after {
+      content: "e";
+      position: absolute;
+      top: 50%;
+      right: 13px;
+      transform: translateY(-50%);
+      color: #8093aa;
+      font-family: var(--mono);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .value-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 38px 0 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      outline: none;
+      color: var(--ink);
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 17px;
+      font-weight: 800;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .value-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+    }
+
+    .action-btn {
+      min-height: 46px;
+      padding: 0 15px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      color: var(--ink);
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: 0 3px 9px rgba(31, 53, 82, 0.04);
+      transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: #90a8c5;
+      background: #f8fbff;
+      box-shadow: 0 7px 16px rgba(31, 53, 82, 0.09);
+    }
+
+    .action-btn:focus-visible,
+    .storage-tab:focus-visible {
+      outline: 3px solid rgba(47, 111, 237, 0.34);
+      outline-offset: 2px;
+    }
+
+    .action-btn:disabled,
+    .value-input:disabled {
+      cursor: wait;
+      opacity: 0.58;
+    }
+
+    .action-btn[data-action="push"] {
+      border-color: transparent;
+      color: #fff;
+      background: var(--blue);
+    }
+
+    .action-btn[data-action="pop"] {
+      border-color: #f0c7cc;
+      color: var(--red);
+      background: #fff8f9;
+    }
+
+    .action-btn[data-action="top"] {
+      border-color: #b9e6df;
+      color: var(--green);
+      background: #f5fffb;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 56px;
+      padding: 11px 22px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafd;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 0 5px rgba(22, 142, 158, 0.12);
+      transition: background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .status-dot.is-error {
+      background: var(--red);
+      box-shadow: 0 0 0 5px rgba(199, 62, 77, 0.12);
+    }
+
+    .status-dot.is-success {
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(22, 132, 91, 0.12);
+    }
+
+    .status-text {
+      min-width: 0;
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 14px;
+    }
+
+    .status-text strong { color: var(--ink); }
+
+    .return-pill {
+      min-width: 132px;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink-soft);
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.16fr) minmax(360px, 0.84fr);
+      min-height: 650px;
+    }
+
+    .visual-panel {
+      min-width: 0;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .panel-kicker {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .panel-note {
+      margin: 4px 0 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px 12px;
+      color: var(--ink-soft);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .legend i {
+      display: block;
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      background: var(--blue);
+    }
+
+    .legend .legend-pointer { background: var(--amber); border-radius: 50%; }
+    .legend .legend-node { background: var(--cyan); }
+
+    .visual-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 430px;
+      padding: 28px 18px;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+      background:
+        linear-gradient(rgba(47, 111, 237, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(47, 111, 237, 0.035) 1px, transparent 1px),
+        #fbfdff;
+      background-size: 24px 24px;
+    }
+
+    .seq-layout {
+      position: relative;
+      display: grid;
+      grid-template-columns: 72px 150px 112px;
+      align-items: stretch;
+      gap: 16px;
+      width: min(100%, 390px);
+      min-height: 364px;
+    }
+
+    .seq-cells {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      height: 364px;
+      border: 1px solid var(--line-strong);
+      border-radius: 15px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(31, 53, 82, 0.08);
+    }
+
+    .seq-cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #fafcff, #fff);
+      transition: background 220ms ease;
+    }
+
+    .seq-cell:last-child { border-bottom: 0; }
+
+    .seq-cell::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      width: 10px;
+      height: 1px;
+      background: var(--line-strong);
+      opacity: 0.55;
+    }
+
+    .cell-index {
+      position: absolute;
+      left: 9px;
+      color: #8ca0b8;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .cell-value {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 74%;
+      height: 70%;
+      border-radius: 11px;
+      font-family: var(--mono);
+      font-size: 21px;
+      font-weight: 900;
+      color: var(--navy);
+      opacity: 0;
+      transform: translateY(12px) scale(0.92);
+      transition: opacity 220ms ease, transform 220ms ease, background 220ms ease, color 220ms ease, box-shadow 220ms ease;
+    }
+
+    .seq-cell.has-value { background: linear-gradient(90deg, var(--blue-soft), #f4f8ff); }
+
+    .seq-cell.has-value .cell-value {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      background: #fff;
+      color: var(--blue);
+      box-shadow: 0 5px 13px rgba(47, 111, 237, 0.14), inset 0 0 0 1px rgba(47, 111, 237, 0.15);
+    }
+
+    .seq-cell.enter .cell-value { animation: cellEnter 520ms cubic-bezier(.2,.75,.2,1); }
+    .seq-cell.leave .cell-value { animation: cellLeave 420ms ease forwards; }
+    .seq-cell.reading .cell-value { animation: cellRead 680ms ease; }
+
+    .seq-pointer {
+      position: absolute;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 30px;
+      color: var(--navy);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      transform: translateY(-50%);
+      transition: top 540ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+      pointer-events: none;
+    }
+
+    .seq-pointer::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 0;
+      height: 0;
+      transform: translateY(-50%);
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+    }
+
+    .base-pointer {
+      left: 0;
+      justify-content: flex-end;
+      width: 62px;
+      color: var(--cyan);
+    }
+
+    .base-pointer::after {
+      right: -1px;
+      border-left: 9px solid currentColor;
+    }
+
+    .top-pointer {
+      right: 0;
+      justify-content: flex-start;
+      width: 100px;
+      color: #c56b00;
+    }
+
+    .top-pointer::after {
+      left: -1px;
+      border-right: 9px solid currentColor;
+    }
+
+    .pointer-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 68px;
+      height: 30px;
+      padding: 0 9px;
+      border: 1px solid currentColor;
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: 0 5px 12px rgba(31, 53, 82, 0.08);
+    }
+
+    .seq-direction {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #8296ad;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .seq-direction.high { top: -7px; }
+    .seq-direction.low { bottom: -7px; }
+
+    .link-stage { overflow: hidden; }
+
+    .link-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 300px;
+      padding: 70px 12px 54px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+    }
+
+    .link-chain {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: max-content;
+      min-height: 138px;
+      padding: 0 16px;
+    }
+
+    .link-node {
+      position: relative;
+      display: grid;
+      grid-template-columns: 16px 1fr 22px;
+      align-items: center;
+      width: 104px;
+      height: 76px;
+      border: 1px solid #8ccfd5;
+      border-radius: 15px;
+      background: var(--cyan-soft);
+      box-shadow: 0 11px 25px rgba(22, 142, 158, 0.13);
+      transition: transform 240ms ease, opacity 240ms ease, box-shadow 240ms ease;
+    }
+
+    .link-node::before,
+    .link-node::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 1px;
+      background: #78bdc5;
+    }
+
+    .link-node::before { left: -12px; }
+    .link-node::after { right: -12px; }
+    .link-node:first-child::before,
+    .link-node.is-last::after { display: none; }
+
+    .node-sep {
+      height: 48px;
+      border-right: 1px solid #8ccfd5;
+    }
+
+    .node-value {
+      color: #0b6571;
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .node-next {
+      color: #198a95;
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .link-node.ghost {
+      border-style: dashed;
+      border-color: var(--amber);
+      background: var(--amber-soft);
+      box-shadow: none;
+      opacity: 0.92;
+      transform: translateY(-12px);
+    }
+
+    .link-node.ghost .node-value { color: #a96000; }
+    .link-node.ghost .node-sep { border-color: #e4b35b; }
+    .link-node.ghost .node-next { color: #b06d0b; }
+
+    .link-arrow {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 38px;
+      flex: none;
+      color: #5f91a3;
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .null-node {
+      display: grid;
+      place-items: center;
+      min-width: 70px;
+      height: 50px;
+      margin-left: 2px;
+      border: 1px dashed #9eb2c8;
+      border-radius: 12px;
+      color: #7b8da3;
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .link-head-pointer {
+      position: absolute;
+      z-index: 8;
+      top: 8px;
+      display: grid;
+      justify-items: center;
+      color: #b56b12;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      transform: translateX(-50%);
+      transition: left 540ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+      pointer-events: none;
+    }
+
+    .link-head-pointer::after {
+      content: "";
+      width: 0;
+      height: 0;
+      margin-top: 5px;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 11px solid currentColor;
+    }
+
+    .link-head-pointer .pointer-badge {
+      min-width: 92px;
+      color: inherit;
+      border-color: currentColor;
+    }
+
+    .link-node.push-in { animation: nodeEnter 560ms cubic-bezier(.2,.75,.2,1); }
+    .link-node.pop-out { animation: nodeLeave 440ms ease forwards; }
+    .link-node.reading { animation: nodeRead 680ms ease; }
+
+    .link-caption {
+      margin-top: 22px;
+      color: var(--ink-soft);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 54px;
+      padding: 10px 10px 10px 42px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: #7b8da3;
+      background: #fbfcfe;
+      font-size: 12px;
+      font-weight: 800;
+      transition: border-color 180ms ease, color 180ms ease, background 180ms ease, transform 180ms ease;
+    }
+
+    .step::before {
+      content: attr(data-step);
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: #7b8da3;
+      background: #eef2f7;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .step.is-active {
+      color: var(--blue);
+      border-color: #9bb8f2;
+      background: var(--blue-soft);
+      transform: translateY(-1px);
+    }
+
+    .step.is-active::before { color: #fff; background: var(--blue); }
+
+    .step.is-error {
+      color: var(--red);
+      border-color: #efb8c0;
+      background: var(--red-soft);
+    }
+
+    .step.is-error::before { color: #fff; background: var(--red); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 11px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f4f7fb;
+      text-align: center;
+    }
+
+    .metric-label {
+      display: block;
+      color: #7b8da3;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      display: block;
+      overflow: hidden;
+      margin-top: 2px;
+      color: var(--navy);
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .code-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f7f9fc;
+    }
+
+    .code-panel .panel-head {
+      align-items: center;
+      margin: 0;
+      padding: 20px 20px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .copy-btn {
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink-soft);
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+
+    .copy-btn:hover {
+      color: var(--blue);
+      border-color: #94b3ef;
+      background: var(--blue-soft);
+    }
+
+    .code-window {
+      flex: 1;
+      min-height: 0;
+      padding: 18px 0;
+      overflow: auto;
+      color: #d8e3f2;
+      background: #10243a;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.75;
+      tab-size: 4;
+    }
+
+    .code-line {
+      display: grid;
+      grid-template-columns: 42px minmax(max-content, 1fr);
+      min-height: 24px;
+      padding-right: 18px;
+      border-left: 3px solid transparent;
+      transition: background 170ms ease, border-color 170ms ease;
+    }
+
+    .code-line.is-active {
+      border-left-color: #52d3d3;
+      background: rgba(82, 211, 211, 0.12);
+    }
+
+    .line-number {
+      padding-right: 10px;
+      color: #60758e;
+      text-align: right;
+      user-select: none;
+    }
+
+    .line-code {
+      padding-left: 10px;
+      white-space: pre;
+    }
+
+    .tok-key { color: #79c7ff; }
+    .tok-type { color: #8de1ce; }
+    .tok-number { color: #ffd166; }
+    .tok-comment { color: #7891a9; font-style: italic; }
+    .tok-func { color: #d9a5ff; }
+
+    .code-note {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      margin: 0;
+      padding: 15px 18px 17px;
+      border-top: 1px solid #243b55;
+      color: #a9bfd5;
+      background: #132b43;
+      font-size: 12px;
+    }
+
+    .code-note b {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      padding: 0 8px;
+      border-radius: 7px;
+      color: #8ce4dd;
+      background: rgba(82, 211, 211, 0.11);
+      white-space: nowrap;
+    }
+
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .concept {
+      position: relative;
+      overflow: hidden;
+      min-height: 150px;
+      padding: 21px 22px;
+      border: 1px solid rgba(201, 213, 228, 0.85);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.84);
+      box-shadow: 0 10px 25px rgba(31, 53, 82, 0.05);
+    }
+
+    .concept::after {
+      content: attr(data-index);
+      position: absolute;
+      right: 14px;
+      bottom: -22px;
+      color: rgba(23, 50, 77, 0.055);
+      font-family: var(--mono);
+      font-size: 90px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .concept h3 {
+      position: relative;
+      z-index: 1;
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .concept p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+    }
+
+    .concept code { color: var(--blue); font-family: var(--mono); font-weight: 900; }
+
+    .compare {
+      margin-top: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(201, 213, 228, 0.85);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.88);
+      box-shadow: 0 10px 25px rgba(31, 53, 82, 0.05);
+    }
+
+    .compare table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .compare th,
+    .compare td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .compare tr:last-child th,
+    .compare tr:last-child td { border-bottom: 0; }
+    .compare th { color: var(--ink); background: #f7f9fc; font-weight: 900; }
+    .compare td { color: var(--ink-soft); }
+    .compare code { color: var(--blue); font-family: var(--mono); font-weight: 900; }
+
+    @keyframes cellEnter {
+      0% { opacity: 0; transform: translateY(13px) scale(0.88); }
+      65% { opacity: 1; transform: translateY(-3px) scale(1.04); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes cellLeave {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(18px) scale(0.82); }
+    }
+
+    @keyframes cellRead {
+      0%, 100% { box-shadow: 0 5px 13px rgba(47, 111, 237, 0.14), inset 0 0 0 1px rgba(47, 111, 237, 0.15); }
+      45% { box-shadow: 0 0 0 7px rgba(245, 158, 11, 0.18), inset 0 0 0 2px rgba(245, 158, 11, 0.7); transform: scale(1.06); }
+    }
+
+    @keyframes nodeEnter {
+      0% { opacity: 0; transform: translateY(-25px) scale(0.86); }
+      70% { opacity: 1; transform: translateY(4px) scale(1.03); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes nodeLeave {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(28px) scale(0.8); }
+    }
+
+    @keyframes nodeRead {
+      0%, 100% { box-shadow: 0 11px 25px rgba(22, 142, 158, 0.13); }
+      50% { box-shadow: 0 0 0 7px rgba(245, 158, 11, 0.18), 0 11px 25px rgba(22, 142, 158, 0.13); transform: translateY(-3px); }
+    }
+
+    @media (max-width: 1080px) {
+      .workspace { grid-template-columns: 1fr; }
+      .visual-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .code-panel { min-height: 520px; }
+    }
+
+    @media (max-width: 760px) {
+      .page { width: min(100% - 24px, 1440px); padding-top: 12px; }
+      .hero { grid-template-columns: 1fr; min-height: 0; padding: 30px 24px; border-radius: 24px; }
+      .hero-chip { display: none; }
+      .storage-tabs { grid-template-columns: 1fr; }
+      .storage-tab { min-height: 68px; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .value-control { width: 100%; }
+      .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-btn { width: 100%; }
+      .status-row { grid-template-columns: auto minmax(0, 1fr); }
+      .return-pill { grid-column: 2; justify-self: start; }
+      .visual-panel { padding: 16px; }
+      .visual-stage { min-height: 390px; padding: 22px 10px; }
+      .seq-layout { grid-template-columns: 62px 118px 96px; gap: 8px; width: min(100%, 320px); min-height: 330px; }
+      .seq-cells { height: 330px; }
+      .seq-direction { display: none; }
+      .base-pointer { width: 54px; }
+      .top-pointer { width: 86px; }
+      .steps { grid-template-columns: 1fr; }
+      .step { min-height: 46px; }
+      .metrics { grid-template-columns: repeat(3, minmax(88px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+      .concept-grid { grid-template-columns: 1fr; }
+      .compare { overflow-x: auto; }
+      .compare table { min-width: 640px; }
+    }
+
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 35px; }
+      .storage-tab { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .tab-help { white-space: normal; }
+      .status-row { padding-inline: 15px; }
+      .visual-panel { padding-inline: 10px; }
+      .visual-stage { padding-inline: 6px; }
+      .seq-layout { grid-template-columns: 52px 105px 80px; gap: 6px; width: 100%; }
+      .panel-head { flex-direction: column; }
+      .legend { justify-content: flex-start; }
+      .link-node { width: 88px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Data Structures · Chapter 3</div>
+        <h1>栈的表示与实现</h1>
+        <p>逐帧观察顺序栈的 <b>top 指针</b>和链栈的 <b>头指针 S</b>。动画与右侧代码同步高亮，完整覆盖初始化、入栈、出栈和取栈顶元素。</p>
+      </div>
+      <div class="hero-chip" aria-hidden="true">
+        <strong>3.3</strong>
+        <span>LIFO</span>
+      </div>
+    </header>
+
+    <nav class="storage-tabs" aria-label="选择栈的存储结构">
+      <button class="storage-tab" type="button" role="tab" aria-selected="true" aria-controls="seqPanel" data-mode="seq">
+        <span class="tab-name"><b>01</b> 顺序栈</span>
+        <span class="tab-help">连续空间 · base / top</span>
+      </button>
+      <button class="storage-tab" type="button" role="tab" aria-selected="false" aria-controls="linkPanel" data-mode="link">
+        <span class="tab-name"><b>02</b> 链栈</span>
+        <span class="tab-help">结点链接 · 头指针 S</span>
+      </button>
+    </nav>
+
+    <section class="simulator" aria-label="栈操作动画演示器">
+      <div class="toolbar">
+        <div class="value-control">
+          <label for="pushValue">入栈元素 e</label>
+          <div class="value-input-wrap">
+            <input class="value-input" id="pushValue" type="text" maxlength="6" value="D" autocomplete="off" spellcheck="false" aria-describedby="valueHelp">
+          </div>
+        </div>
+        <div class="actions" aria-label="栈操作">
+          <button class="action-btn" type="button" data-action="init">初始化</button>
+          <button class="action-btn" type="button" data-action="push">入栈 Push</button>
+          <button class="action-btn" type="button" data-action="pop">出栈 Pop</button>
+          <button class="action-btn" type="button" data-action="top">取栈顶 GetTop</button>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+        <p class="status-text" id="statusText" aria-live="polite"><strong>顺序栈已载入示例 A、B、C。</strong> 选择一项操作，观察指针与代码的同步变化。</p>
+        <div class="return-pill" id="returnValue">返回值 e = --</div>
+      </div>
+
+      <div class="workspace">
+        <section class="visual-panel" id="seqPanel" role="tabpanel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">结构视图</span>
+              <h2 id="visualTitle">顺序栈 SqStack</h2>
+              <p class="panel-note" id="visualNote">top 指向栈顶元素之上的下一个空位。</p>
+            </div>
+            <div class="legend" aria-label="图例">
+              <span><i class="legend-node"></i>数据元素</span>
+              <span><i class="legend-pointer"></i>活动指针</span>
+              <span><i style="background:#168e9e"></i>固定栈底</span>
+            </div>
+          </div>
+
+          <div class="visual-stage seq-stage" id="seqStage" aria-label="顺序栈动画区域">
+            <div class="seq-layout" id="seqLayout">
+              <span class="seq-direction high">高地址 / 栈顶方向 ↑</span>
+              <div class="seq-pointer base-pointer" id="seqBasePointer">
+                <span class="pointer-badge">base = 0</span>
+              </div>
+              <div class="seq-cells" id="seqCells" aria-label="顺序栈单元格"></div>
+              <div class="seq-pointer top-pointer" id="seqTopPointer">
+                <span class="pointer-badge">top = 3</span>
+              </div>
+              <span class="seq-direction low">低地址 / 栈底 base</span>
+            </div>
+          </div>
+
+          <div class="steps" id="seqSteps" aria-live="polite">
+            <span class="step" data-step="1">判断栈空 / 栈满</span>
+            <span class="step" data-step="2">写入或读取元素</span>
+            <span class="step" data-step="3">移动 top 指针</span>
+          </div>
+
+          <div class="metrics" id="seqMetrics">
+            <div class="metric"><span class="metric-label">base</span><span class="metric-value" id="seqBaseMetric">0</span></div>
+            <div class="metric"><span class="metric-label">top</span><span class="metric-value" id="seqTopMetric">3</span></div>
+            <div class="metric"><span class="metric-label">length</span><span class="metric-value" id="seqLengthMetric">3 / 6</span></div>
+          </div>
+        </section>
+
+        <section class="visual-panel" id="linkPanel" role="tabpanel" hidden>
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">结构视图</span>
+              <h2 id="visualTitleLink">链栈 LinkStack</h2>
+              <p class="panel-note" id="visualNoteLink">S 是头指针，始终指向当前栈顶结点。</p>
+            </div>
+            <div class="legend" aria-label="图例">
+              <span><i class="legend-node"></i>栈结点</span>
+              <span><i class="legend-pointer"></i>头指针 S</span>
+              <span><i style="background:#9eb2c8"></i>NULL 链尾</span>
+            </div>
+          </div>
+
+          <div class="visual-stage link-stage" id="linkStage" aria-label="链栈动画区域">
+            <div class="link-wrap">
+              <div class="link-chain" id="linkChain"></div>
+              <div class="link-head-pointer" id="linkHeadPointer">
+                <span class="pointer-badge">栈顶 S</span>
+              </div>
+            </div>
+            <div class="link-caption">入栈在头部插入结点；出栈删除头结点。无需附加头结点。</div>
+          </div>
+
+          <div class="steps" id="linkSteps" aria-live="polite">
+            <span class="step" data-step="1">判断 S 是否为空</span>
+            <span class="step" data-step="2">修改结点链接</span>
+            <span class="step" data-step="3">移动栈顶指针 S</span>
+          </div>
+
+          <div class="metrics" id="linkMetrics">
+            <div class="metric"><span class="metric-label">S->data</span><span class="metric-value" id="linkTopMetric">C</span></div>
+            <div class="metric"><span class="metric-label">length</span><span class="metric-value" id="linkLengthMetric">3</span></div>
+            <div class="metric"><span class="metric-label">栈尾 next</span><span class="metric-value" id="linkTailMetric">NULL</span></div>
+          </div>
+        </section>
+
+        <aside class="code-panel" aria-label="代码与算法说明">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">C / C++ 伪代码</span>
+              <h2 id="codeTitle">顺序栈 · 初始化 InitStack</h2>
+              <p class="panel-note" id="codeSubtitle">分配连续空间，使 top 与 base 重合。</p>
+            </div>
+            <button class="copy-btn" type="button" id="copyCode">复制代码</button>
+          </div>
+          <div class="code-window" id="codeWindow" aria-label="算法代码">
+            <div id="codeLines"></div>
+          </div>
+          <div class="code-note" id="codeNote">
+            <b>看这里</b>
+            <span id="codeNoteText">点击上方任一操作，代码窗口会把正在执行的语句逐行高亮。</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="concept-grid" aria-label="核心结论">
+      <article class="concept" data-index="01">
+        <h3>顺序栈：一句话抓住 top</h3>
+        <p><code>base</code> 固定不动；空栈时 <code>base == top</code>。每次入栈先写 <code>*top = e</code>，再执行 <code>top++</code>。</p>
+      </article>
+      <article class="concept" data-index="02">
+        <h3>链栈：S 就是栈顶</h3>
+        <p>没有头结点，<code>S</code> 直接指向栈顶结点。入栈执行 <code>p->next = S; S = p;</code>，三步完成头部插入。</p>
+      </article>
+      <article class="concept" data-index="03">
+        <h3>共同规则：后进先出</h3>
+        <p>两种实现只在存储方式和指针操作上不同；受限的插入、删除都发生在栈顶，因此访问顺序始终是 LIFO。</p>
+      </article>
+    </section>
+
+    <section class="compare" aria-label="顺序栈与链栈对比">
+      <table>
+        <thead>
+          <tr>
+            <th>比较项</th>
+            <th>顺序栈</th>
+            <th>链栈</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>空栈条件</th>
+            <td><code>S.top == S.base</code></td>
+            <td><code>S == NULL</code></td>
+          </tr>
+          <tr>
+            <th>满栈处理</th>
+            <td><code>S.top - S.base == S.stacksize</code>，可报错或扩容</td>
+            <td>理论与动态内存有关；按需申请新结点</td>
+          </tr>
+          <tr>
+            <th>入栈核心</th>
+            <td><code>*S.top++ = e;</code></td>
+            <td><code>p->next = S; S = p;</code></td>
+          </tr>
+          <tr>
+            <th>出栈核心</th>
+            <td><code>e = *--S.top;</code></td>
+            <td><code>p = S; S = S->next; delete p;</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const state = {
+      mode: "seq",
+      busy: false,
+      currentAction: "init",
+      seq: {
+        base: 0,
+        top: 3,
+        stacksize: 6,
+        data: ["A", "B", "C"]
+      },
+      link: {
+        nodes: ["C", "B", "A"]
+      }
+    };
+
+    const seqCells = $("seqCells");
+    const seqLayout = $("seqLayout");
+    const seqTopPointer = $("seqTopPointer");
+    const seqBasePointer = $("seqBasePointer");
+    const linkChain = $("linkChain");
+    const linkHeadPointer = $("linkHeadPointer");
+    const statusText = $("statusText");
+    const statusDot = $("statusDot");
+    const returnValue = $("returnValue");
+    const pushValue = $("pushValue");
+    const codeLines = $("codeLines");
+    const codeTitle = $("codeTitle");
+    const codeSubtitle = $("codeSubtitle");
+    const codeNoteText = $("codeNoteText");
+
+    const snippets = {
+      seq: {
+        init: {
+          title: "顺序栈 · 初始化 InitStack",
+          subtitle: "分配连续空间，使 top 与 base 重合。",
+          note: "base 和 top 初始相等，表示当前没有元素；stacksize 记录容量。",
+          lines: [
+            "Status InitStack(SqStack &S) {",
+            "    S.base = new SElemType[MAXSIZE];",
+            "    if (!S.base) return OVERFLOW;",
+            "    S.top = S.base;",
+            "    S.stackSize = MAXSIZE;",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "申请连续空间", lines: [2, 3], message: "为 base 申请 MAXSIZE 个连续元素空间。" },
+            { label: "base = top", lines: [4], message: "top 回到 base，形成空栈。" },
+            { label: "记录容量", lines: [5, 6], message: "写入 stacksize，初始化完成。" }
+          ]
+        },
+        push: {
+          title: "顺序栈 · 入栈 Push",
+          subtitle: "先判满，再写元素，最后让 top 加一。",
+          note: "*S.top++ = e 等价于两步：先把 e 写入 *top，再把 top 向后移动一格。",
+          lines: [
+            "Status Push(SqStack &S, SElemType e) {",
+            "    if (S.top - S.base == S.stacksize) // 栈满",
+            "        return ERROR;",
+            "    *S.top++ = e;",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "判断栈满", lines: [2], message: "检查 top 与 base 的距离是否等于 stacksize。" },
+            { label: "写入 e", lines: [4], message: "把新元素写入 top 当前指向的空位。" },
+            { label: "top 指针 +1", lines: [4], message: "top 上移一格，继续指向新的空位。" }
+          ]
+        },
+        pop: {
+          title: "顺序栈 · 出栈 Pop",
+          subtitle: "先判空，再让 top 减一，最后取出栈顶元素。",
+          note: "e = *--S.top 是先移动指针，再读取新 top 指向的元素。",
+          lines: [
+            "Status Pop(SqStack &S, SElemType &e) {",
+            "    if (S.top == S.base) // 栈空",
+            "        return ERROR;",
+            "    e = *--S.top;",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "判断栈空", lines: [2], message: "检查 base 与 top 是否相等。" },
+            { label: "top 指针 -1", lines: [4], message: "top 下移一格，指向原栈顶元素。" },
+            { label: "读取元素 e", lines: [4], message: "取出该位置的值并通过 e 返回。" }
+          ]
+        },
+        top: {
+          title: "顺序栈 · 取栈顶 GetTop",
+          subtitle: "只读取元素，不改变 top 的位置。",
+          note: "当前栈顶保存在 *(S.top - 1)；GetTop 不删除元素。",
+          lines: [
+            "Status GetTop(SqStack S, SElemType &e) {",
+            "    if (S.top == S.base) return ERROR;",
+            "    e = *(S.top - 1);",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "判断栈空", lines: [2], message: "空栈时不能读取栈顶元素。" },
+            { label: "定位栈顶", lines: [3], message: "栈顶位于 top - 1 所指向的位置。" },
+            { label: "返回 e", lines: [4], message: "读取成功且 top 指针保持不变。" }
+          ]
+        }
+      },
+      link: {
+        init: {
+          title: "链栈 · 初始化 InitStack",
+          subtitle: "头指针置空，表示没有栈顶结点。",
+          note: "链栈不需要附加头结点，S == NULL 即为空栈。",
+          lines: [
+            "void InitStack(LinkStack &S) {",
+            "    S = NULL;",
+            "}"
+          ],
+          steps: [
+            { label: "释放原链", lines: [2], message: "演示中清理现有结点。" },
+            { label: "S = NULL", lines: [2], message: "栈顶指针为空，初始化完成。" },
+            { label: "空栈就绪", lines: [2], message: "下一次入栈将从空链开始。" }
+          ]
+        },
+        push: {
+          title: "链栈 · 入栈 Push",
+          subtitle: "新结点插到链表头部，并让 S 指向它。",
+          note: "先让 p->next 指向旧栈顶 S，再把 S 移到新结点 p。",
+          lines: [
+            "Status Push(LinkStack &S, SElemType e) {",
+            "    p = new StackNode;",
+            "    if (!p) exit(OVERFLOW);",
+            "    p->data = e;",
+            "    p->next = S;",
+            "    S = p;",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "申请新结点", lines: [2, 3], message: "创建结点 p 并检查分配是否成功。" },
+            { label: "写入数据", lines: [4], message: "执行 p->data = e。" },
+            { label: "修改链接", lines: [5, 6], message: "p 接住原链，S 移动到新栈顶。" }
+          ]
+        },
+        pop: {
+          title: "链栈 · 出栈 Pop",
+          subtitle: "保存头结点 p，移动 S，再删除旧栈顶。",
+          note: "顺序不能颠倒：必须先让 S 指向下一个结点，才能安全 delete p。",
+          lines: [
+            "Status Pop(LinkStack &S, SElemType &e) {",
+            "    if (S == NULL) return ERROR;",
+            "    e = S->data;",
+            "    p = S;",
+            "    S = S->next;",
+            "    delete p;",
+            "    return OK;",
+            "}"
+          ],
+          steps: [
+            { label: "判断栈空", lines: [2], message: "S == NULL 时不能出栈。" },
+            { label: "保存栈顶 p", lines: [3, 4], message: "先取出数据，再用 p 记住旧栈顶。" },
+            { label: "移动 S 并删除 p", lines: [5, 6, 7], message: "S 指向下一结点，释放旧栈顶。" }
+          ]
+        },
+        top: {
+          title: "链栈 · 取栈顶 GetTop",
+          subtitle: "直接返回头结点中的数据，不移动 S。",
+          note: "链栈的栈顶就是头指针 S 指向的结点，所以时间复杂度为 O(1)。",
+          lines: [
+            "SElemType GetTop(LinkStack S) {",
+            "    if (S == NULL) exit(1);",
+            "    else return S->data;",
+            "}"
+          ],
+          steps: [
+            { label: "判断栈空", lines: [2], message: "空栈不能读取结点数据。" },
+            { label: "读取 S->data", lines: [3], message: "直接返回栈顶结点的数据域。" },
+            { label: "指针不变", lines: [3], message: "GetTop 不改变栈结构。" }
+          ]
+        }
+      }
+    };
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function highlightCode(text) {
+      const commentAt = text.indexOf("//");
+      let code = commentAt >= 0 ? text.slice(0, commentAt) : text;
+      const comment = commentAt >= 0 ? text.slice(commentAt) : "";
+      code = escapeHtml(code);
+      code = code.replace(/\b(Status|void|typedef|struct|int|bool|if|else|return|new|delete|true|false|NULL|OVERFLOW|ERROR|OK)\b/g, '<span class="tok-key">$1</span>');
+      code = code.replace(/\b(SElemType|SqStack|StackNode|LinkStack)\b/g, '<span class="tok-type">$1</span>');
+      code = code.replace(/\b(\d+)\b/g, '<span class="tok-number">$1</span>');
+      code = code.replace(/\b(InitStack|Push|Pop|GetTop)\b(?=\s*\()/g, '<span class="tok-func">$1</span>');
+      if (comment) code += '<span class="tok-comment">' + escapeHtml(comment) + "</span>";
+      return code;
+    }
+
+    function currentSnippet(action) {
+      return snippets[state.mode][action];
+    }
+
+    function renderCode(action, focusLines = []) {
+      state.currentAction = action;
+      const snippet = currentSnippet(action);
+      codeTitle.textContent = snippet.title;
+      codeSubtitle.textContent = snippet.subtitle;
+      codeNoteText.textContent = snippet.note;
+      codeLines.innerHTML = snippet.lines.map((line, index) => {
+        const lineNumber = index + 1;
+        const active = focusLines.includes(lineNumber) ? " is-active" : "";
+        return '<div class="code-line' + active + '" data-line="' + lineNumber + '">' +
+          '<span class="line-number">' + lineNumber + '</span>' +
+          '<span class="line-code">' + highlightCode(line) + '</span>' +
+          '</div>';
+      }).join("");
+    }
+
+    function focusCode(lines) {
+      const wanted = new Set(lines);
+      codeLines.querySelectorAll(".code-line").forEach((line) => {
+        line.classList.toggle("is-active", wanted.has(Number(line.dataset.line)));
+      });
+    }
+
+    function setStatus(message, type = "info", returned = null) {
+      statusText.innerHTML = message;
+      statusDot.classList.toggle("is-error", type === "error");
+      statusDot.classList.toggle("is-success", type === "success");
+      returnValue.textContent = returned === null ? "返回值 e = --" : "返回值 e = " + returned;
+    }
+
+    function setSteps(containerId, stepDefinitions, activeIndex = -1, errorIndex = -1) {
+      const container = $(containerId);
+      container.innerHTML = stepDefinitions.map((step, index) => {
+        const active = index === activeIndex ? " is-active" : "";
+        const error = index === errorIndex ? " is-error" : "";
+        return '<span class="step' + active + error + '" data-step="' + (index + 1) + '">' + step.label + "</span>";
+      }).join("");
+    }
+
+    function codeStep(action, index) {
+      const snippet = currentSnippet(action);
+      const step = snippet.steps[index];
+      focusCode(step.lines);
+      setStatus("<strong>" + step.label + "：</strong>" + step.message, "info");
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      document.querySelectorAll(".action-btn, .storage-tab, #pushValue").forEach((control) => {
+        control.disabled = busy;
+      });
+    }
+
+    function renderSeq(options = {}) {
+      const { entering = null, leaving = null, reading = null, clearing = false } = options;
+      const fragment = document.createDocumentFragment();
+      for (let index = state.seq.stacksize - 1; index >= 0; index -= 1) {
+        const cell = document.createElement("div");
+        cell.className = "seq-cell";
+        cell.dataset.index = String(index);
+        if (state.seq.data[index] !== undefined && state.seq.data[index] !== null) cell.classList.add("has-value");
+        if (index === entering) cell.classList.add("enter");
+        if (index === leaving || clearing) cell.classList.add("leave");
+        if (index === reading) cell.classList.add("reading");
+
+        const indexLabel = document.createElement("span");
+        indexLabel.className = "cell-index";
+        indexLabel.textContent = String(index);
+
+        const value = document.createElement("span");
+        value.className = "cell-value";
+        const item = state.seq.data[index];
+        value.textContent = item === undefined || item === null ? "" : String(item);
+
+        cell.append(indexLabel, value);
+        fragment.append(cell);
+      }
+      seqCells.replaceChildren(fragment);
+      positionSeqPointers(false);
+      updateSeqMetrics();
+    }
+
+    function positionSeqPointers(animate = true) {
+      const layoutRect = seqLayout.getBoundingClientRect();
+      const cellsRect = seqCells.getBoundingClientRect();
+      if (!layoutRect.height || !cellsRect.height) return;
+
+      const baseCell = seqCells.querySelector('[data-index="0"]');
+      if (!baseCell) return;
+
+      const baseRect = baseCell.getBoundingClientRect();
+      const baseY = baseRect.bottom - layoutRect.top;
+      const top = state.seq.top;
+
+      let topY = baseY;
+      if (top > 0) {
+        const topCell = seqCells.querySelector('[data-index="' + (top - 1) + '"]');
+        if (topCell) topY = topCell.getBoundingClientRect().top - layoutRect.top;
+      }
+
+      if (!animate) {
+        const topTransition = seqTopPointer.style.transition;
+        const baseTransition = seqBasePointer.style.transition;
+        seqTopPointer.style.transition = "none";
+        seqBasePointer.style.transition = "none";
+        seqTopPointer.style.top = topY + "px";
+        seqBasePointer.style.top = baseY + "px";
+        requestAnimationFrame(() => {
+          seqTopPointer.style.transition = topTransition;
+          seqBasePointer.style.transition = baseTransition;
+        });
+      } else {
+        seqTopPointer.style.top = topY + "px";
+        seqBasePointer.style.top = baseY + "px";
+      }
+
+      const topBadge = seqTopPointer.querySelector(".pointer-badge");
+      const baseBadge = seqBasePointer.querySelector(".pointer-badge");
+      if (topBadge) topBadge.textContent = "top = " + top;
+      if (baseBadge) baseBadge.textContent = "base = 0";
+    }
+
+    function updateSeqMetrics() {
+      $("seqBaseMetric").textContent = "0";
+      $("seqTopMetric").textContent = String(state.seq.top);
+      $("seqLengthMetric").textContent = state.seq.top + " / " + state.seq.stacksize;
+    }
+
+    function renderLink(options = {}) {
+      const { entering = null, leaving = null, reading = null, ghost = null } = options;
+      const fragment = document.createDocumentFragment();
+
+      if (ghost !== null) {
+        const ghostNode = document.createElement("div");
+        ghostNode.className = "link-node ghost";
+        ghostNode.innerHTML = '<span class="node-sep"></span><span class="node-value">' + escapeHtml(ghost) + '</span><span class="node-next">&rarr;</span>';
+        fragment.append(ghostNode);
+        const ghostArrow = document.createElement("span");
+        ghostArrow.className = "link-arrow";
+        ghostArrow.innerHTML = "&rarr;";
+        fragment.append(ghostArrow);
+      }
+
+      state.link.nodes.forEach((value, index) => {
+        const node = document.createElement("div");
+        node.className = "link-node";
+        node.dataset.index = String(index);
+        if (index === state.link.nodes.length - 1) node.classList.add("is-last");
+        if (index === entering) node.classList.add("push-in");
+        if (index === leaving) node.classList.add("pop-out");
+        if (index === reading) node.classList.add("reading");
+        node.innerHTML = '<span class="node-sep"></span><span class="node-value">' + escapeHtml(value) + '</span><span class="node-next">&rarr;</span>';
+        fragment.append(node);
+
+        if (index < state.link.nodes.length - 1) {
+          const arrow = document.createElement("span");
+          arrow.className = "link-arrow";
+          arrow.innerHTML = "&rarr;";
+          fragment.append(arrow);
+        }
+      });
+
+      const nullNode = document.createElement("div");
+      nullNode.className = "null-node";
+      nullNode.textContent = "NULL";
+      fragment.append(nullNode);
+      linkChain.replaceChildren(fragment);
+      positionLinkPointer(false);
+      updateLinkMetrics();
+    }
+
+    function positionLinkPointer(animate = true) {
+      const wrapRect = linkHeadPointer.parentElement.getBoundingClientRect();
+      const firstNode = linkChain.querySelector(".link-node:not(.ghost)");
+      if (!firstNode || !wrapRect.width) {
+        linkHeadPointer.style.opacity = "0";
+        return;
+      }
+      const nodeRect = firstNode.getBoundingClientRect();
+      const left = nodeRect.left - wrapRect.left + nodeRect.width / 2;
+      if (!animate) {
+        linkHeadPointer.style.transition = "none";
+        linkHeadPointer.style.left = left + "px";
+        requestAnimationFrame(() => { linkHeadPointer.style.transition = ""; });
+      } else {
+        linkHeadPointer.style.left = left + "px";
+      }
+      linkHeadPointer.style.opacity = "1";
+    }
+
+    function updateLinkMetrics() {
+      const topValue = state.link.nodes[0];
+      $("linkTopMetric").textContent = topValue === undefined ? "NULL" : topValue;
+      $("linkLengthMetric").textContent = String(state.link.nodes.length);
+      $("linkTailMetric").textContent = state.link.nodes.length ? "NULL" : "—";
+    }
+
+    function switchMode(mode) {
+      if (state.busy || mode === state.mode) return;
+      state.mode = mode;
+      document.querySelectorAll(".storage-tab").forEach((tab) => {
+        tab.setAttribute("aria-selected", String(tab.dataset.mode === mode));
+      });
+      $("seqPanel").hidden = mode !== "seq";
+      $("linkPanel").hidden = mode !== "link";
+
+      if (mode === "seq") {
+        setSteps("seqSteps", [
+          { label: "判断栈空 / 栈满" },
+          { label: "写入或读取元素" },
+          { label: "移动 top 指针" }
+        ]);
+        setStatus("<strong>顺序栈视图。</strong> base 固定在索引 0，top 表示下一个可写入位置。", "info");
+        renderSeq();
+        requestAnimationFrame(() => positionSeqPointers(false));
+      } else {
+        setSteps("linkSteps", [
+          { label: "判断 S 是否为空" },
+          { label: "修改结点链接" },
+          { label: "移动栈顶指针 S" }
+        ]);
+        setStatus("<strong>链栈视图。</strong> S 指向当前栈顶结点，NULL 表示链尾。", "info");
+        renderLink();
+        requestAnimationFrame(() => positionLinkPointer(false));
+      }
+      renderCode("init");
+    }
+
+    async function runSeqInit() {
+      const snippet = currentSnippet("init");
+      setSteps("seqSteps", snippet.steps, 0);
+      codeStep("init", 0);
+      await wait(430);
+      setSteps("seqSteps", snippet.steps, 1);
+      codeStep("init", 1);
+      state.seq.data = [];
+      state.seq.top = 0;
+      renderSeq({ clearing: true });
+      await wait(500);
+      setSteps("seqSteps", snippet.steps, 2);
+      codeStep("init", 2);
+      updateSeqMetrics();
+      setStatus("<strong>初始化完成：</strong>base 与 top 都指向索引 0，顺序栈为空。", "success");
+      await wait(420);
+    }
+
+    async function runSeqPush() {
+      const snippet = currentSnippet("push");
+      const item = (pushValue.value.trim() || "e").slice(0, 6);
+      setSteps("seqSteps", snippet.steps, 0);
+      codeStep("push", 0);
+      await wait(480);
+
+      if (state.seq.top >= state.seq.stacksize) {
+        setSteps("seqSteps", snippet.steps, -1, 0);
+        focusCode([2, 3]);
+        setStatus("<strong>入栈失败：</strong>S.top - S.base == S.stacksize，栈已满。", "error");
+        await wait(520);
+        return;
+      }
+
+      const index = state.seq.top;
+      setSteps("seqSteps", snippet.steps, 1);
+      codeStep("push", 1);
+      state.seq.data[index] = item;
+      renderSeq({ entering: index });
+      await wait(590);
+
+      setSteps("seqSteps", snippet.steps, 2);
+      codeStep("push", 2);
+      state.seq.top += 1;
+      positionSeqPointers(true);
+      renderCode("push", [4]);
+      updateSeqMetrics();
+      await wait(560);
+      setStatus("<strong>入栈成功：</strong>元素 " + escapeHtml(item) + " 位于索引 " + index + "，top 已移动到 " + state.seq.top + "。", "success", item);
+      setNextPushValue();
+      await wait(420);
+    }
+
+    async function runSeqPop() {
+      const snippet = currentSnippet("pop");
+      setSteps("seqSteps", snippet.steps, 0);
+      codeStep("pop", 0);
+      await wait(460);
+
+      if (state.seq.top === 0) {
+        setSteps("seqSteps", snippet.steps, -1, 0);
+        focusCode([2, 3]);
+        setStatus("<strong>出栈失败：</strong>S.top == S.base，栈为空。", "error");
+        await wait(520);
+        return;
+      }
+
+      const oldIndex = state.seq.top - 1;
+      const item = state.seq.data[oldIndex];
+      setSteps("seqSteps", snippet.steps, 1);
+      codeStep("pop", 1);
+      state.seq.top -= 1;
+      positionSeqPointers(true);
+      updateSeqMetrics();
+      await wait(560);
+
+      setSteps("seqSteps", snippet.steps, 2);
+      codeStep("pop", 2);
+      renderSeq({ reading: oldIndex });
+      await wait(660);
+
+      state.seq.data[oldIndex] = null;
+      renderSeq({ leaving: oldIndex });
+      await wait(430);
+      renderSeq();
+      setStatus("<strong>出栈成功：</strong>栈顶元素 " + escapeHtml(item) + " 已通过 e 返回。", "success", item);
+      await wait(420);
+    }
+
+    async function runSeqTop() {
+      const snippet = currentSnippet("top");
+      setSteps("seqSteps", snippet.steps, 0);
+      codeStep("top", 0);
+      await wait(440);
+
+      if (state.seq.top === 0) {
+        setSteps("seqSteps", snippet.steps, -1, 0);
+        focusCode([2]);
+        setStatus("<strong>读取失败：</strong>S.top == S.base，栈为空。", "error");
+        await wait(500);
+        return;
+      }
+
+      const index = state.seq.top - 1;
+      const item = state.seq.data[index];
+      setSteps("seqSteps", snippet.steps, 1);
+      codeStep("top", 1);
+      renderSeq({ reading: index });
+      await wait(560);
+
+      setSteps("seqSteps", snippet.steps, 2);
+      codeStep("top", 2);
+      setStatus("<strong>取栈顶成功：</strong>e = " + escapeHtml(item) + "，top 指针保持原位。", "success", item);
+      await wait(500);
+    }
+
+    async function runLinkInit() {
+      const snippet = currentSnippet("init");
+      setSteps("linkSteps", snippet.steps, 0);
+      codeStep("init", 0);
+      await wait(420);
+      setSteps("linkSteps", snippet.steps, 1);
+      codeStep("init", 1);
+      state.link.nodes = [];
+      renderLink();
+      positionLinkPointer(true);
+      await wait(520);
+      setSteps("linkSteps", snippet.steps, 2);
+      codeStep("init", 2);
+      setStatus("<strong>初始化完成：</strong>S = NULL，链栈为空。", "success");
+      await wait(420);
+    }
+
+    async function runLinkPush() {
+      const snippet = currentSnippet("push");
+      const item = (pushValue.value.trim() || "e").slice(0, 6);
+      setSteps("linkSteps", snippet.steps, 0);
+      codeStep("push", 0);
+      await wait(470);
+
+      setSteps("linkSteps", snippet.steps, 1);
+      codeStep("push", 1);
+      renderLink({ ghost: item });
+      positionLinkPointer(true);
+      await wait(560);
+
+      setSteps("linkSteps", snippet.steps, 2);
+      codeStep("push", 2);
+      const oldLeft = parseFloat(linkHeadPointer.style.left || "0");
+      state.link.nodes.unshift(item);
+      renderLink({ entering: 0 });
+      linkHeadPointer.style.left = oldLeft + "px";
+      requestAnimationFrame(() => { positionLinkPointer(true); });
+      updateLinkMetrics();
+      await wait(560);
+      setStatus("<strong>入栈成功：</strong>新结点 " + escapeHtml(item) + " 成为新的栈顶，S 指向它。", "success", item);
+      setNextPushValue();
+      await wait(420);
+    }
+
+    async function runLinkPop() {
+      const snippet = currentSnippet("pop");
+      setSteps("linkSteps", snippet.steps, 0);
+      codeStep("pop", 0);
+      await wait(450);
+
+      if (state.link.nodes.length === 0) {
+        setSteps("linkSteps", snippet.steps, -1, 0);
+        focusCode([2]);
+        setStatus("<strong>出栈失败：</strong>S == NULL，链栈为空。", "error");
+        await wait(500);
+        return;
+      }
+
+      const item = state.link.nodes[0];
+      setSteps("linkSteps", snippet.steps, 1);
+      codeStep("pop", 1);
+      renderLink({ reading: 0 });
+      await wait(620);
+
+      setSteps("linkSteps", snippet.steps, 2);
+      codeStep("pop", 2);
+      const firstNode = linkChain.querySelector(".link-node");
+      if (firstNode) firstNode.classList.add("pop-out");
+      await wait(390);
+      state.link.nodes.shift();
+      renderLink();
+      positionLinkPointer(true);
+      updateLinkMetrics();
+      setStatus("<strong>出栈成功：</strong>旧栈顶 " + escapeHtml(item) + " 已删除，S 指向下一个结点。", "success", item);
+      await wait(460);
+    }
+
+    async function runLinkTop() {
+      const snippet = currentSnippet("top");
+      setSteps("linkSteps", snippet.steps, 0);
+      codeStep("top", 0);
+      await wait(430);
+
+      if (state.link.nodes.length === 0) {
+        setSteps("linkSteps", snippet.steps, -1, 0);
+        focusCode([2]);
+        setStatus("<strong>读取失败：</strong>S == NULL，链栈为空。", "error");
+        await wait(500);
+        return;
+      }
+
+      const item = state.link.nodes[0];
+      setSteps("linkSteps", snippet.steps, 1);
+      codeStep("top", 1);
+      renderLink({ reading: 0 });
+      await wait(610);
+      setSteps("linkSteps", snippet.steps, 2);
+      codeStep("top", 2);
+      setStatus("<strong>取栈顶成功：</strong>S->data = " + escapeHtml(item) + "，S 指针保持不变。", "success", item);
+      await wait(460);
+    }
+
+    function setNextPushValue() {
+      const current = pushValue.value.trim();
+      if (/^[A-Z]$/i.test(current)) {
+        pushValue.value = current.toUpperCase() === "Z" ? "A" : String.fromCharCode(current.toUpperCase().charCodeAt(0) + 1);
+      }
+    }
+
+    async function runAction(action) {
+      if (state.busy) return;
+      renderCode(action);
+      setBusy(true);
+      setStatus("<strong>执行中：</strong>请观察左侧指针移动和右侧代码高亮。", "info");
+      try {
+        if (state.mode === "seq") {
+          if (action === "init") await runSeqInit();
+          if (action === "push") await runSeqPush();
+          if (action === "pop") await runSeqPop();
+          if (action === "top") await runSeqTop();
+        } else {
+          if (action === "init") await runLinkInit();
+          if (action === "push") await runLinkPush();
+          if (action === "pop") await runLinkPop();
+          if (action === "top") await runLinkTop();
+        }
+        if (!statusDot.classList.contains("is-error")) statusDot.classList.add("is-success");
+        const snippet = currentSnippet(action);
+        setSteps(state.mode === "seq" ? "seqSteps" : "linkSteps", snippet.steps, -1);
+        if (snippet.steps.length) focusCode(snippet.steps[snippet.steps.length - 1].lines);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    document.querySelectorAll(".storage-tab").forEach((tab) => {
+      tab.addEventListener("click", () => switchMode(tab.dataset.mode));
+    });
+
+    document.querySelectorAll(".action-btn").forEach((button) => {
+      button.addEventListener("click", () => runAction(button.dataset.action));
+    });
+
+    pushValue.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") runAction("push");
+    });
+
+    $("copyCode").addEventListener("click", async () => {
+      const text = currentSnippet(state.currentAction).lines.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        $("copyCode").textContent = "已复制";
+        setTimeout(() => { $("copyCode").textContent = "复制代码"; }, 1200);
+      } catch (error) {
+        $("copyCode").textContent = "复制失败";
+        setTimeout(() => { $("copyCode").textContent = "复制代码"; }, 1200);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (state.mode === "seq") positionSeqPointers(false);
+      else positionLinkPointer(false);
+    });
+
+    renderSeq();
+    renderLink();
+    renderCode("init");
+    requestAnimationFrame(() => {
+      positionSeqPointers(false);
+      positionLinkPointer(false);
+    });
+  </script>
+</body>
+</html>
